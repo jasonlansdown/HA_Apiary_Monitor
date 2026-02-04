@@ -108,7 +108,7 @@ Complete hardware requirements for The Bee Brothel monitoring system.
 
 ## 🔌 Complete Shopping List
 
-### **Minimum System - $250**
+### **Minimum System**
 ```
 ☐ SEEED XIAO ESP32-S3 Sense      $15
 ☐ Raspberry Pi 3B+                $35
@@ -123,7 +123,7 @@ Complete hardware requirements for The Bee Brothel monitoring system.
                         Total: ~$304
 ```
 
-### **Recommended System - $350**
+### **Recommended System**
 ```
 ☐ SEEED XIAO ESP32-S3 Sense      $15
 ☐ Raspberry Pi 4 (4GB)           $55
