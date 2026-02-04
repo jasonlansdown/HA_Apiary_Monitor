@@ -1,280 +1,148 @@
-# 🐝 The Bee Brothel - Smart Hive Monitoring System
+# Configuration Files
 
-A comprehensive, self-hosted bee hive monitoring system using computer vision, environmental sensors, and Home Assistant automation. Designed for Colorado's dry climate with seasonal winter/summer health scoring.
+This directory contains all configuration files for The Bee Brothel monitoring system.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.9+-green.svg)
-![ESPHome](https://img.shields.io/badge/ESPHome-2024.1+-purple.svg)
-
----
-
-## 📸 System Overview
-
-**Real-time monitoring of:**
-- 🐝 Bee activity via computer vision (motion detection)
-- 🌡️ Internal hive temperature (dual probes)
-- ⚖️ Hive weight with temperature compensation
-- 💧 Humidity levels
-- 🎯 Comprehensive health scoring (0-100%)
-- 📊 Nectar flow detection
-- 🚨 Robbing alerts
-- 👑 Queen health indicators
-
----
-
-## ✨ Key Features
-
-### **Seasonal Intelligence**
-- **Winter Mode** (≤50°F): Optimized for cluster temps (50-70°F), low activity normal
-- **Summer Mode** (>50°F): Optimized for brood rearing (93-95°F), high foraging expected
-- **Colorado Climate Adjusted**: Humidity ranges calibrated for dry climate (20-40% optimal)
-
-### **Real-Time Monitoring**
-- Live camera feed with 5-second motion detection updates
-- Activity percentage calculated from pixel-level motion analysis
-- Estimated bees-per-minute count
-- 24-hour trend graphs
-
-### **Smart Alerts**
-- Critical health score (<30%) with 15-min delay
-- Robbing detection (high activity + weight loss)
-- Temperature alerts (too hot/cold)
-- Low activity warnings during warm weather
-- Nectar flow detection
-- Daily summary reports (8 PM)
-
-### **Temperature-Compensated Weight**
-- Raw scale readings corrected for thermal expansion (-0.0558 kg/°C)
-- Accurate daily weight change calculations
-- Nectar flow vs. consumption tracking
-
----
-
-## 🛠️ Hardware Requirements
-
-### **Core Components (~$250-300)**
-- **Camera**: Seeed XIAO ESP32-S3 with camera (~$15)
-- **Computer Vision**: Raspberry Pi 3/4 (~$35-55)
-- **Sensors**: Broodminder-T2 + W3 (~$200)
-- **Hub**: Home Assistant server (any platform)
-
-### **Optional**
-- iPhone + WhatsApp (via GreenAPI)
-- Solar panel + battery for remote deployment
-
-📋 **[Complete Hardware Shopping List →](HARDWARE.md)**
-
----
-
-## 📂 Repository Structure
+## 📁 Directory Structure
 
 ```
-bee-brothel/
-├── README.md                          # This file
-├── INSTALL.md                         # Step-by-step installation guide
-├── HARDWARE.md                        # Detailed shopping list & specs
-├── TROUBLESHOOTING.md                 # Common issues & solutions
-├── LICENSE                            # MIT License
+config/
+├── esphome/
+│   ├── bee-hive-monitor.yaml          # ESP32 camera configuration
+│   └── secrets.yaml.template          # Template for WiFi credentials
 │
-├── config/                            # ⭐ All configuration files included!
-│   ├── README.md                      # Config setup instructions
-│   │
-│   ├── esphome/
-│   │   ├── bee-hive-monitor.yaml     # ESP32 camera configuration
-│   │   └── secrets.yaml.template     # WiFi credentials template
-│   │
-│   ├── home-assistant/
-│   │   ├── configuration.yaml        # Sensors, health scoring, templates
-│   │   ├── automations.yaml          # 11 alert automations
-│   │   └── dashboard.yaml            # Complete Lovelace dashboard
-│   │
-│   └── raspberry-pi/
-│       ├── bee_activity_monitor.py   # Motion detection script
-│       ├── bee-monitor.service       # Systemd auto-start service
-│       └── requirements.txt          # Python dependencies
+├── home-assistant/
+│   ├── configuration.yaml             # Sensors, templates, and health scoring
+│   ├── automations.yaml               # Alert automations
+│   └── dashboard.yaml                 # Lovelace dashboard configuration
 │
-└── docs/
-    ├── HOME_ASSISTANT_SETUP.md       # Detailed HA configuration guide
-    └── images/                        # Screenshots & photos
+└── raspberry-pi/
+    ├── bee_activity_monitor.py        # Motion detection Python script
+    ├── bee-monitor.service            # Systemd service file
+    └── requirements.txt               # Python dependencies
 ```
 
----
+## ⚙️ Setup Instructions
 
-## 🚀 Quick Start
+### 1. ESPHome Configuration
 
-### **1. Get the Hardware**
-📋 [Hardware Shopping List](HARDWARE.md) - Complete list with links (~$250-300 total)
+```bash
+# Copy secrets template
+cp config/esphome/secrets.yaml.template config/esphome/secrets.yaml
 
-### **2. Install the Software**
-📖 [Installation Guide](INSTALL.md) - Step-by-step setup for:
-- ESP32 camera (ESPHome)
-- Raspberry Pi motion detection
-- Home Assistant configuration
-- Broodminder sensor integration
+# Edit with your details
+nano config/esphome/secrets.yaml
 
-### **3. Configure Your System**
-⚙️ [Configuration Files](config/) - All configs included, just customize:
-- Update sensor entity IDs (your Broodminder serials)
-- Set network IPs (ESP32, Raspberry Pi, Home Assistant)
-- Adjust humidity ranges (if not in Colorado)
+# Flash to ESP32
+esphome run config/esphome/bee-hive-monitor.yaml
+```
 
-### **4. Deploy & Monitor**
-📱 Access your dashboard and start monitoring!
+### 2. Raspberry Pi Setup
 
----
+```bash
+# Install dependencies
+pip3 install --break-system-packages -r config/raspberry-pi/requirements.txt
 
-## 🎯 Health Scoring System
+# Copy script to Raspberry Pi
+scp config/raspberry-pi/bee_activity_monitor.py pi@raspberrypi.local:~/bee-monitor/
 
-### **Winter Mode** (≤50°F external)
-| Component | Points | Optimal Range |
-|-----------|--------|---------------|
-| Temperature | 30 | 50-70°F (cluster) |
-| Activity | 25 | 10-30% (low normal) |
-| Weight | 25 | -0.1 to 0.1 kg/day (stable) |
-| Humidity | 20 | 20-35% (CO dry climate) |
+# Edit configuration in script
+nano ~/bee-monitor/bee_activity_monitor.py
+# Update: ESP32_IP, HA_URL, HA_TOKEN
 
-### **Summer Mode** (>50°F external)
-| Component | Points | Optimal Range |
-|-----------|--------|---------------|
-| Temperature | 30 | 93-95°F (brood rearing) |
-| Activity | 25 | 60%+ (high foraging) |
-| Weight | 25 | >0.5 kg/day (nectar flow) |
-| Humidity | 20 | 30-40% (CO dry climate) |
+# Copy systemd service
+sudo cp config/raspberry-pi/bee-monitor.service /etc/systemd/system/
 
-**Health Status:**
-- 85-100%: ✅ Excellent - Hive thriving!
-- 70-84%: 🟡 Good - Normal conditions
-- 50-69%: 🟠 Fair - Monitor closely
-- 30-49%: 🔴 Poor - Intervention may be needed
-- 0-29%: 🚨 Critical - Immediate attention required
+# Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable bee-monitor
+sudo systemctl start bee-monitor
+```
 
----
+### 3. Home Assistant Configuration
 
-## 🔔 Automated Alerts
+```bash
+# Backup your current configuration first!
+cp /config/configuration.yaml /config/configuration.yaml.backup
 
-**Notifications via iPhone + WhatsApp:**
-- 🚨 Critical health (<30%) after 15 min
-- 🐝 Robbing detected (high activity + weight loss)
-- 🌡️ Temperature alerts (too hot/cold)
-- ⚖️ Significant weight loss (>0.5 kg/day)
-- 📊 Daily summary at 8 PM
-- 🔋 Sensor battery low (<20%)
-- 📷 Camera offline (10 min)
-- 🎉 Excellent health achieved (>85%)
+# Add bee hive sections from:
+config/home-assistant/configuration.yaml
 
----
+# Add automations from:
+config/home-assistant/automations.yaml
 
-## 📊 Dashboard Preview
+# Check configuration
+# Home Assistant -> Developer Tools -> YAML -> Check Configuration
 
-**Features:**
-- Health score with seasonal breakdown
-- Live camera feed (16:9 aspect ratio)
-- Activity, temperature, weight, humidity cards
-- 24-hour trend graphs
-- System status monitoring
-- Manual controls (restart, snapshot)
+# Restart Home Assistant
+```
 
-*Screenshots coming soon - add yours to `docs/images/`!*
+### 4. Dashboard
 
----
+```bash
+# In Home Assistant:
+# Settings -> Dashboards -> + Add Dashboard
+# Name: "Apiary"
+# Three dots menu -> Raw Configuration Editor
+# Paste contents from: config/home-assistant/dashboard.yaml
+```
 
-## 🌍 Climate Customization
+## 🔧 Customization Required
 
-**Designed for Colorado but easily adaptable:**
+### Update Sensor Entity IDs
 
-Humidity ranges in [`config/home-assistant/configuration.yaml`](config/home-assistant/configuration.yaml):
+Replace `XXXXX` with your actual Broodminder sensor serial numbers:
 
+- `sensor.broodminder_t_XXXXX_temperature` (internal temp)
+- `sensor.broodminder_w_XXXXX_weight_realtime` (scale)
+- `sensor.broodminder_w_XXXXX_temperature` (external temp)
+- `sensor.broodminder_w_XXXXX_humidity` (humidity)
+
+Find your actual sensor IDs:
+1. Home Assistant -> Developer Tools -> States
+2. Search for "broodminder"
+3. Copy exact entity IDs
+
+### Update Network Settings
+
+**ESP32 (esphome/bee-hive-monitor.yaml):**
 ```yaml
-# For humid climates (e.g., Eastern US)
-# Change winter optimal from 20-35% to 40-60%
-# Change summer optimal from 30-40% to 50-60%
-
-# For very dry climates (e.g., Southwest)
-# Keep ranges as-is or adjust lower (15-25% winter, 20-30% summer)
+manual_ip:
+  static_ip: 192.168.1.100  # Change to available IP on your network
+  gateway: 192.168.1.1      # Change to your router IP
 ```
 
----
+**Raspberry Pi (raspberry-pi/bee_activity_monitor.py):**
+```python
+ESP32_IP = "192.168.1.100"            # Match ESP32 IP above
+HA_URL = "http://192.168.1.50:8123"   # Your Home Assistant URL
+HA_TOKEN = "YOUR_TOKEN_HERE"          # Long-lived access token
+```
 
-## 💾 Data Storage
+### Adjust for Your Climate
 
-**Home Assistant automatically tracks:**
-- Activity levels (1-hour, 24-hour averages)
-- Weight changes (24-hour, 7-day averages)
-- Temperature trends (24-hour average)
-- Health score history
-- Peak activity times
+If not in Colorado's dry climate, update humidity ranges in `configuration.yaml`:
 
-**Retention**: Configurable (default 10+ days)
+**Humid climates (Eastern US, Europe):**
+- Winter: 40-60% optimal
+- Summer: 50-70% optimal
 
----
+**Very dry (Southwest US):**
+- Winter: 15-25% optimal
+- Summer: 20-30% optimal
 
-## 🔒 Privacy & Security
+## 🔒 Security Notes
 
-- **100% self-hosted** - No cloud dependencies except Broodminder sensors
-- **Local processing** - Computer vision runs on your Raspberry Pi
-- **Secure communications** - Home Assistant uses encrypted API
-- **Optional cloud** - Broodminder cloud can be disabled
+**Never commit these to GitHub:**
+- `secrets.yaml` (WiFi passwords)
+- Home Assistant tokens
+- API keys
+- Your network IPs
 
----
+These are already in `.gitignore` to prevent accidental commits.
 
-## 🐛 Troubleshooting
+## 📚 Documentation
 
-Common issues and solutions in [TROUBLESHOOTING.md](TROUBLESHOOTING.md):
-- ESP32 camera connection problems
-- Python script errors
-- Sensor unavailable states
-- Health score showing "unknown"
-- Motion detection calibration
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
-
-**Ideas for enhancement:**
-- AI-powered bee counting (YOLO/TensorFlow)
-- Varroa mite detection via camera
-- Audio analysis (buzzing patterns)
-- Weather forecast integration
-- Multi-hive support
-- Mobile app (standalone)
-
----
-
-## 📝 License
-
-MIT License - See [LICENSE](LICENSE) file
-
----
-
-## 🙏 Credits
-
-**Inspiration & Components:**
-- [Broodminder](https://broodminder.com/) - Professional hive sensors
-- [ESPHome](https://esphome.io/) - ESP32 firmware framework
-- [Home Assistant](https://www.home-assistant.io/) - Home automation platform
-- [OpenCV](https://opencv.org/) - Computer vision library
-
----
-
-## 📧 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/bee-brothel/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/bee-brothel/discussions)
-
----
-
-## ⭐ Star This Project
-
-If you find this project helpful, please star it on GitHub to help others discover it!
-
----
-
-**Made with 💚 for bees in Colorado**
-
-*Note: This system is designed for monitoring and educational purposes. Always follow local beekeeping regulations and best practices.*
+- [Full Installation Guide](../INSTALL.md)
+- [Home Assistant Setup Details](../docs/HOME_ASSISTANT_SETUP.md)
+- [Troubleshooting Guide](../TROUBLESHOOTING.md)
+- [Hardware Requirements](../HARDWARE.md)

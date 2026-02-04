@@ -1,0 +1,412 @@
+# =============================================================================
+# BEE HIVE DASHBOARD - LOVELACE CONFIGURATION
+# Multi-column responsive layout optimized for desktop and mobile
+# =============================================================================
+
+views:
+  - type: sections
+    max_columns: 3
+    title: Apiary
+    path: apiary
+    icon: mdi:beehive-outline
+    header:
+      card:
+        type: markdown
+        content: '# 🐝 The Bee Brothel'
+    sections:
+      # =======================================================================
+      # TOP ROW: Health Overview + Live Camera
+      # =======================================================================
+      - type: grid
+        columns: 2
+        cards:
+          # Critical Alerts (conditionally shown)
+          - type: conditional
+            conditions:
+              - condition: or
+                conditions:
+                  - condition: state
+                    entity: binary_sensor.bee_hive_critical_health_alert
+                    state: 'on'
+                  - condition: state
+                    entity: binary_sensor.bee_hive_robbing_detected
+                    state: 'on'
+                  - condition: state
+                    entity: binary_sensor.bee_hive_temperature_alert
+                    state: 'on'
+            card:
+              type: markdown
+              content: >
+                ## ⚠️ CRITICAL ALERTS
+                {% if is_state('binary_sensor.bee_hive_robbing_detected', 'on') %}
+                🚨 **ROBBING DETECTED** - High activity with rapid weight loss!
+                {% endif %}
+                {% if is_state('binary_sensor.bee_hive_temperature_alert', 'on') %}
+                🌡️ **TEMPERATURE ALERT** - {{ state_attr('binary_sensor.bee_hive_temperature_alert', 'reason') }}
+                {% endif %}
+                {% if is_state('binary_sensor.bee_hive_critical_health_alert', 'on') %}
+                ❤️ **HEALTH CRITICAL** - Overall health score below 30%
+                {% endif %}
+              card_mod:
+                style: |
+                  ha-card {
+                    background-color: rgba(255, 0, 0, 0.1);
+                    border: 2px solid red;
+                  }
+          
+          # Quick Status Glance
+          - type: vertical-stack
+            cards:
+              - type: glance
+                columns: 4
+                show_name: true
+                show_icon: true
+                show_state: true
+                entities:
+                  - entity: sensor.bee_hive_health_score
+                    name: Health
+                  - entity: sensor.bee_hive_monitor_activity_score
+                    name: Activity
+                  - entity: sensor.broodminder_t_47_50_96_temperature
+                    name: Brood Temp
+                  - entity: sensor.beehive_weight_compensated
+                    name: Weight
+                state_color: true
+          
+          # Live Camera Feed
+          - type: picture-entity
+            entity: camera.bee_hive_monitor_camera
+            name: 📹 Live Hive Entrance
+            show_state: false
+            show_name: true
+            camera_view: live
+            aspect_ratio: '16:9'
+            tap_action:
+              action: more-info
+            card_mod:
+              style: |
+                ha-card {
+                  border-radius: 12px;
+                  overflow: hidden;
+                }
+          
+          # Health Score Card
+          - type: vertical-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Hive Health Score
+                secondary: >
+                  {{ states('sensor.bee_hive_health_score') }}% - {{ state_attr('sensor.bee_hive_health_score', 'health_status') }}
+                icon: mdi:beehive-outline
+                badge_color: >
+                  {% if is_state('binary_sensor.bee_hive_critical_health_alert', 'on') %}red
+                  {% else %}green
+                  {% endif %}
+                badge_icon: >
+                  {% if is_state('binary_sensor.bee_hive_critical_health_alert', 'on') %}mdi:alert-circle
+                  {% endif %}
+                tap_action:
+                  action: more-info
+                entity: sensor.bee_hive_health_score
+                color: >
+                  {% set score = states('sensor.bee_hive_health_score') | int(0) %}
+                  {% if score >= 85 %}green
+                  {% elif score >= 70 %}light-green
+                  {% elif score >= 50 %}orange
+                  {% else %}red
+                  {% endif %}
+                features_position: bottom
+              
+              # Status Tiles
+              - type: tile
+                entity: sensor.bee_hive_temperature_health
+                name: Temperature Status
+                icon: mdi:thermometer
+                color: red
+                vertical: false
+              - type: tile
+                entity: sensor.bee_hive_nectar_flow_status
+                name: Nectar Flow Status
+                icon: mdi:flower-pollen
+                color: amber
+                vertical: false
+              - type: tile
+                entity: sensor.bee_hive_daily_weight_change
+                name: Daily Weight Change
+                icon: mdi:scale
+                color: green
+                vertical: false
+          
+          # Health Score Breakdown
+          - type: entities
+            title: ❤️ Health Score Breakdown
+            show_header_toggle: false
+            entities:
+              - entity: sensor.bee_hive_health_score
+                name: Overall Score
+                icon: mdi:heart-pulse
+                type: custom:bar-card
+                height: 40px
+                severity:
+                  - value: 0
+                    color: '#c62828'
+                  - value: 30
+                    color: '#f57c00'
+                  - value: 50
+                    color: '#fbc02d'
+                  - value: 70
+                    color: '#7cb342'
+                  - value: 85
+                    color: '#2e7d32'
+              - type: divider
+              - type: attribute
+                entity: sensor.bee_hive_health_score
+                attribute: temperature_score
+                name: Temperature (max 30)
+                icon: mdi:thermometer
+              - type: attribute
+                entity: sensor.bee_hive_health_score
+                attribute: activity_score
+                name: Activity (max 25)
+                icon: mdi:bee
+              - type: attribute
+                entity: sensor.bee_hive_health_score
+                attribute: weight_score
+                name: Weight (max 25)
+                icon: mdi:scale
+              - type: attribute
+                entity: sensor.bee_hive_health_score
+                attribute: humidity_score
+                name: Humidity (max 20)
+                icon: mdi:water-percent
+          
+          # Queen Health & Alerts
+          - type: entities
+            title: 👑 Queen Health & Alerts
+            show_header_toggle: false
+            state_color: true
+            entities:
+              - entity: sensor.bee_hive_queen_health_indicator
+                name: Queen Assessment
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.bee_hive_queen_health_indicator
+                attribute: brood_temp
+                name: Brood Temp
+              - type: attribute
+                entity: sensor.bee_hive_queen_health_indicator
+                attribute: activity
+                name: Activity Level
+              - type: divider
+              - entity: binary_sensor.bee_hive_robbing_detected
+                name: Robbing Alert
+                icon: mdi:alert-octagon
+              - entity: binary_sensor.bee_hive_temperature_alert
+                name: Temperature Alert
+                icon: mdi:thermometer-alert
+
+      # =======================================================================
+      # STATUS ROW: Activity, Environment, Weight
+      # =======================================================================
+      - type: grid
+        columns: 3
+        cards:
+          # Activity Metrics
+          - type: vertical-stack
+            cards:
+              - type: entities
+                title: 🐝 Activity Metrics
+                show_header_toggle: false
+                entities:
+                  - entity: sensor.bee_hive_monitor_activity_score
+                    name: Current Activity
+                    icon: mdi:bee
+                    secondary_info: last-changed
+                  - entity: sensor.bee_hive_monitor_estimated_bees_per_minute
+                    name: Bees/Minute
+                    icon: mdi:bee
+                  - entity: sensor.bee_hive_monitor_activity_level
+                    name: Classification
+                  - type: divider
+                  - entity: sensor.bee_hive_activity_1h_avg
+                    name: 1h Average
+                  - entity: sensor.bee_hive_peak_activity_today
+                    name: Today's Peak
+          
+          # Environmental
+          - type: vertical-stack
+            cards:
+              - type: entities
+                title: 🌡️ Environmental
+                show_header_toggle: false
+                entities:
+                  - type: section
+                    label: Internal Hive
+                  - entity: sensor.broodminder_t_47_50_96_temperature
+                    name: Lower Brood Temp
+                    secondary_info: last-changed
+                  - entity: sensor.broodminder_t_47_50_97_temperature
+                    name: Upper Brood Temp
+                    secondary_info: last-changed
+                  - entity: sensor.broodminder_w_57_41_5e_humidity
+                    name: Humidity
+                    secondary_info: last-changed
+                  - type: section
+                    label: External
+                  - entity: sensor.broodminder_w_57_41_5e_temperature
+                    name: Outside Temp
+                    secondary_info: last-changed
+          
+          # Weight Tracking
+          - type: vertical-stack
+            cards:
+              - type: entities
+                title: ⚖️ Weight Tracking
+                show_header_toggle: false
+                entities:
+                  - entity: sensor.beehive_weight_compensated
+                    name: True Weight
+                    icon: mdi:scale
+                    secondary_info: last-changed
+                  - type: divider
+                  - type: attribute
+                    entity: sensor.bee_hive_daily_weight_change
+                    attribute: trend
+                    name: Daily Trend
+                  - type: divider
+                  - entity: binary_sensor.bee_hive_nectar_flow_active
+                    name: Flow Active
+
+      # =======================================================================
+      # GRAPHS ROW: Activity, Temperature, Weight Trends
+      # =======================================================================
+      - type: grid
+        columns: 1
+        cards:
+          - type: history-graph
+            title: 📈 Activity Trend
+            hours_to_show: 24
+            refresh_interval: 60
+            entities:
+              - entity: sensor.bee_hive_monitor_activity_score
+                name: Activity %
+          
+          - type: history-graph
+            title: 🌡️ Temperature Trend
+            refresh_interval: 60
+            entities:
+              - entity: sensor.broodminder_t_47_50_96_temperature
+                name: Lower Brood
+              - entity: sensor.broodminder_t_47_50_97_temperature
+                name: Upper Brood
+              - entity: sensor.broodminder_w_57_41_5e_temperature
+                name: External
+            hours_to_show: 120
+          
+          - type: history-graph
+            title: ⚖️ Daily Weight Change
+            refresh_interval: 60
+            entities:
+              - entity: sensor.bee_hive_daily_weight_change
+                name: Daily Change
+            hours_to_show: 720
+          
+          # Long-term Statistics
+          - type: entities
+            title: 📊 Long-Term Statistics
+            show_header_toggle: false
+            entities:
+              - type: section
+                label: Weight Averages (Compensated)
+              - entity: sensor.bee_hive_weight_24h_avg
+                name: 24 Hour
+                icon: mdi:calendar-today
+              - entity: sensor.bee_hive_weight_7d_avg
+                name: 7 Day
+                icon: mdi:calendar-week
+              - type: section
+                label: Health & Temperature
+              - entity: sensor.bee_hive_health_score_24h_avg
+                name: Avg Health (24h)
+                icon: mdi:heart
+              - entity: sensor.bee_hive_internal_temp_24h_avg
+                name: Avg Temp (24h)
+                icon: mdi:thermometer
+              - entity: sensor.bee_hive_activity_24h_avg
+                name: Avg Activity (24h)
+                icon: mdi:bee
+
+      # =======================================================================
+      # SYSTEM HEALTH ROW
+      # =======================================================================
+      - type: grid
+        columns: 2
+        cards:
+          # System Status
+          - type: entities
+            title: 🔧 System Health
+            show_header_toggle: false
+            state_color: true
+            entities:
+              - type: section
+                label: ESP32 Camera
+              - entity: binary_sensor.bee_hive_monitor_status
+                name: Online Status
+                icon: mdi:camera
+              - entity: sensor.bee_hive_monitor_wifi_signal
+                name: WiFi Signal
+                icon: mdi:wifi
+              - entity: sensor.bee_hive_monitor_uptime
+                name: Uptime
+                icon: mdi:clock-outline
+              - type: section
+                label: Broodminder Sensors
+              - entity: sensor.broodminder_t_47_50_96_battery
+                icon: mdi:battery
+                name: Lower Brood Temp Sensor Battery
+              - entity: sensor.broodminder_t_47_50_97_battery
+                name: Upper Brood Temp Sensor Battery
+              - entity: sensor.broodminder_w_57_41_5e_battery
+                name: Scale Battery
+                icon: mdi:battery
+              - type: section
+                label: Controls
+              - entity: switch.bee_hive_monitor_monitoring_enabled
+                name: Monitoring
+              - entity: button.bee_hive_monitor_capture_snapshot
+                name: Capture Photo
+              - entity: button.bee_hive_monitor_restart
+                name: Restart Camera
+          
+          # Weight Compensation Details
+          - type: entities
+            title: 🔬 Compensation Details
+            show_header_toggle: false
+            entities:
+              - type: section
+                label: Current Readings
+              - entity: sensor.beehive_weight_compensated
+                name: Compensated Weight
+                icon: mdi:scale
+              - entity: sensor.broodminder_w_57_41_5e_weight_realtime
+                name: Raw Weight
+                icon: mdi:scale-off
+              - type: section
+                label: Correction Applied
+              - entity: sensor.beehive_weight_temperature_effect
+                name: Temperature Offset
+                icon: mdi:thermometer
+              - type: attribute
+                entity: sensor.beehive_weight_compensated
+                attribute: temperature
+                name: Scale Temperature
+              - type: section
+                label: System Status
+              - type: attribute
+                entity: sensor.beehive_weight_compensated
+                attribute: compensation_active
+                name: Compensation Active
+              - type: attribute
+                entity: sensor.beehive_weight_compensated
+                attribute: calibration_date
+                name: Calibration Date

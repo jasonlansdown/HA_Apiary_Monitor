@@ -1,0 +1,228 @@
+# =============================================================================
+# BEE HIVE MONITORING AUTOMATIONS
+# Add these to your existing automations.yaml
+# =============================================================================
+
+# =============================================================================
+# CRITICAL ALERTS
+# =============================================================================
+
+- id: bee_hive_critical_health
+  alias: Bee Hive - Critical Health Alert
+  description: Alert when hive health score drops below 30%
+  mode: single
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.bee_hive_health_score
+    below: 30
+    for:
+      minutes: 15
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "🚨 HIVE HEALTH CRITICAL"
+      message: "Bee Brothel health score is {{ states('sensor.bee_hive_health_score') }}%. {{ state_attr('sensor.bee_hive_health_score', 'health_status') }}"
+
+- id: bee_hive_robbing_detected
+  alias: Bee Hive - Robbing Detection
+  description: Alert on possible robbing (high activity + weight loss)
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.bee_hive_robbing_detected
+    to: 'on'
+    for:
+      minutes: 5
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "🚨 ROBBING DETECTED"
+      message: "Possible robbing at Bee Brothel! High activity ({{ states('sensor.bee_hive_monitor_activity_score') }}%) with weight loss ({{ states('sensor.bee_hive_daily_weight_change') }} kg/day)"
+
+- id: bee_hive_temperature_alert
+  alias: Bee Hive - Temperature Alert
+  description: Alert when temperature is too hot or too cold
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.bee_hive_temperature_alert
+    to: 'on'
+    for:
+      minutes: 30
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "🌡️ Hive Temperature Alert"
+      message: "{{ state_attr('binary_sensor.bee_hive_temperature_alert', 'reason') }}"
+
+# =============================================================================
+# POSITIVE ALERTS
+# =============================================================================
+
+- id: bee_hive_nectar_flow_started
+  alias: Bee Hive - Nectar Flow Started
+  description: Alert when nectar flow begins (weight gain + high activity)
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.bee_hive_nectar_flow_active
+    to: 'on'
+    for:
+      hours: 2
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "🌸 Nectar Flow Started!"
+      message: "Bee Brothel is bringing in nectar! Weight gain: {{ states('sensor.bee_hive_daily_weight_change') }} kg/day"
+
+- id: bee_hive_excellent_health
+  alias: Bee Hive - Excellent Health Achieved
+  description: Celebrate when hive reaches excellent health
+  mode: single
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.bee_hive_health_score
+    above: 85
+    for:
+      hours: 6
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "🎉 Hive Health Excellent!"
+      message: "Bee Brothel is thriving! Health score: {{ states('sensor.bee_hive_health_score') }}%"
+
+# =============================================================================
+# MONITORING ALERTS
+# =============================================================================
+
+- id: bee_hive_low_activity_warning
+  alias: Bee Hive - Low Activity Warning
+  description: Alert when activity is low during warm weather
+  mode: single
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.bee_hive_monitor_activity_score
+    below: 15
+    for:
+      hours: 4
+  conditions:
+  - condition: numeric_state
+    entity_id: sensor.broodminder_w_57_41_5e_temperature
+    above: 65
+  - condition: time
+    after: '09:00:00'
+    before: '18:00:00'
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "⚠️ Low Hive Activity"
+      message: "Low activity detected during warm weather. Activity: {{ states('sensor.bee_hive_monitor_activity_score') }}%"
+
+- id: bee_hive_weight_loss
+  alias: Bee Hive - Significant Weight Loss
+  description: Alert on significant daily weight loss
+  mode: single
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.bee_hive_daily_weight_change
+    below: -0.5
+    for:
+      hours: 2
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "⚖️ Hive Weight Loss Alert"
+      message: "Bee Brothel losing weight: {{ states('sensor.bee_hive_daily_weight_change') }} kg/day"
+
+# =============================================================================
+# SYSTEM MONITORING
+# =============================================================================
+
+- id: bee_hive_camera_offline
+  alias: Bee Hive - Camera Offline
+  description: Alert when ESP32 camera goes offline
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.bee_hive_monitor_status
+    to: 'off'
+    for:
+      minutes: 10
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "📷 Bee Camera Offline"
+      message: "Bee hive camera has been offline for 10 minutes"
+
+- id: bee_hive_battery_low
+  alias: Bee Hive - Sensor Battery Low
+  description: Alert when Broodminder sensor batteries are low
+  mode: parallel
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.broodminder_t_47_50_96_battery
+    - sensor.broodminder_w_57_41_5e_battery
+    below: 20
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "🔋 Bee Sensor Battery Low"
+      message: "{{ trigger.to_state.attributes.friendly_name }} is at {{ trigger.to_state.state }}%"
+
+# =============================================================================
+# DAILY ROUTINES
+# =============================================================================
+
+- id: bee_hive_daily_report
+  alias: Bee Hive - Daily Summary Report
+  description: Send daily summary at 8 PM
+  mode: single
+  triggers:
+  - trigger: time
+    at: '20:00:00'
+  actions:
+  - action: notify.notify  # Change to your notification service
+    data:
+      title: "📊 Bee Brothel Daily Report"
+      message: |
+        Health: {{ states('sensor.bee_hive_health_score') }}%
+        Activity: {{ states('sensor.bee_hive_monitor_activity_score') }}%
+        Weight Change: {{ states('sensor.bee_hive_daily_weight_change') }} kg
+        Temperature: {{ states('sensor.broodminder_t_47_50_96_temperature') }}°F
+
+- id: bee_hive_weight_snapshot
+  alias: Bee Hive - Daily Weight Snapshot
+  description: Capture weight at midnight for daily change calculation
+  triggers:
+  - trigger: time
+    at: '00:00:00'
+  actions:
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.bee_hive_weight_snapshot
+    data:
+      value: '{{ states(''sensor.beehive_weight_compensated'') | float(0) }}'
+
+# =============================================================================
+# OPTIONAL: TIMELAPSE CAPTURE
+# =============================================================================
+
+# Uncomment to enable automatic timelapse capture every 10 minutes during daylight
+# - id: bee_hive_timelapse_capture
+#   alias: Bee Hive - Timelapse Capture
+#   description: Capture image every 10 minutes for timelapse
+#   mode: single
+#   triggers:
+#   - trigger: time_pattern
+#     minutes: /10
+#   conditions:
+#   - condition: sun
+#     after: sunrise
+#     before: sunset
+#   actions:
+#   - action: camera.snapshot
+#     target:
+#       entity_id: camera.bee_hive_monitor_camera
+#     data:
+#       filename: /config/www/timelapse/beehive_{{ now().strftime('%Y%m%d_%H%M') }}.jpg
