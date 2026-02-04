@@ -135,8 +135,8 @@ template:
       # =====================================================================
       # SEASONAL HEALTH SCORE - COLORADO DRY CLIMATE
       # Automatically switches between Winter/Summer modes
-      # Winter: External temp ≤ 50°F
-      # Summer: External temp > 50°F
+      # Winter: November 1 - March 31 (months 11, 12, 1, 2, 3)
+      # Summer: April 1 - October 31 (months 4-10)
       # =====================================================================
       - name: "Bee Hive Health Score"
         unique_id: bee_hive_health_score
@@ -148,10 +148,12 @@ template:
           {% set temp = states('sensor.broodminder_t_47_50_96_temperature') | float(0) %}
           {% set weight_change = states('sensor.bee_hive_daily_weight_change') | float(0) %}
           {% set humidity = states('sensor.broodminder_w_57_41_5e_humidity') | float(0) %}
-          {% set external_temp = states('sensor.broodminder_w_57_41_5e_temperature') | float(0) %}
           
-          {# Determine season based on external temperature #}
-          {% set is_winter = external_temp <= 50 %}
+          {# Determine season based on calendar month #}
+          {# Winter: November, December, January, February, March #}
+          {# Summer: April through October #}
+          {% set month = now().month %}
+          {% set is_winter = month in [11, 12, 1, 2, 3] %}
           
           {# TEMPERATURE SCORE (0-30 points) - SEASONAL #}
           {% if is_winter %}
@@ -192,14 +194,16 @@ template:
           {{ (temp_score + activity_score + weight_score + humidity_score) | round(0) }}
         attributes:
           season_mode: >
-            {% set external_temp = states('sensor.broodminder_w_57_41_5e_temperature') | float(0) %}
-            {{ 'Winter' if external_temp <= 50 else 'Summer' }}
+            {% set month = now().month %}
+            {{ 'Winter' if month in [11, 12, 1, 2, 3] else 'Summer' }}
+          current_month: >
+            {{ now().strftime('%B') }}
           external_temperature: >
             {{ states('sensor.broodminder_w_57_41_5e_temperature') }}°F
           temperature_score: >
             {% set temp = states('sensor.broodminder_t_47_50_96_temperature') | float(0) %}
-            {% set external_temp = states('sensor.broodminder_w_57_41_5e_temperature') | float(0) %}
-            {% set is_winter = external_temp <= 50 %}
+            {% set month = now().month %}
+            {% set is_winter = month in [11, 12, 1, 2, 3] %}
             {% if is_winter %}
               {{ 30 if (temp >= 50 and temp <= 70) else (25 if (temp >= 40 and temp < 50) else (20 if (temp > 70 and temp <= 80) else (15 if (temp >= 30 and temp < 40) else (10 if (temp > 80 and temp <= 90) else 5)))) }}
             {% else %}
@@ -207,8 +211,8 @@ template:
             {% endif %}
           activity_score: >
             {% set activity = states('sensor.bee_hive_monitor_activity_score') | float(0) %}
-            {% set external_temp = states('sensor.broodminder_w_57_41_5e_temperature') | float(0) %}
-            {% set is_winter = external_temp <= 50 %}
+            {% set month = now().month %}
+            {% set is_winter = month in [11, 12, 1, 2, 3] %}
             {% if is_winter %}
               {{ 25 if (activity >= 10 and activity <= 30) else (20 if (activity >= 5 and activity < 10) else (20 if (activity > 30 and activity <= 50) else (15 if activity < 5 else (10 if activity > 50 else 5)))) }}
             {% else %}
@@ -216,8 +220,8 @@ template:
             {% endif %}
           weight_score: >
             {% set weight_change = states('sensor.bee_hive_daily_weight_change') | float(0) %}
-            {% set external_temp = states('sensor.broodminder_w_57_41_5e_temperature') | float(0) %}
-            {% set is_winter = external_temp <= 50 %}
+            {% set month = now().month %}
+            {% set is_winter = month in [11, 12, 1, 2, 3] %}
             {% if is_winter %}
               {{ 25 if (weight_change >= -0.1 and weight_change <= 0.1) else (20 if (weight_change > -0.3 and weight_change < -0.1) else (20 if (weight_change > 0.1 and weight_change <= 0.3) else (15 if (weight_change > -0.5 and weight_change <= -0.3) else (10 if weight_change > 0.3 else 5)))) }}
             {% else %}
@@ -225,8 +229,8 @@ template:
             {% endif %}
           humidity_score: >
             {% set humidity = states('sensor.broodminder_w_57_41_5e_humidity') | float(0) %}
-            {% set external_temp = states('sensor.broodminder_w_57_41_5e_temperature') | float(0) %}
-            {% set is_winter = external_temp <= 50 %}
+            {% set month = now().month %}
+            {% set is_winter = month in [11, 12, 1, 2, 3] %}
             {% if is_winter %}
               {{ 20 if (humidity >= 20 and humidity <= 35) else (15 if (humidity >= 15 and humidity <= 45) else (10 if (humidity >= 10 and humidity <= 50) else 5)) }}
             {% else %}
@@ -241,8 +245,9 @@ template:
             {% else %}Critical - Immediate attention required
             {% endif %}
           scoring_explanation: >
-            {% set external_temp = states('sensor.broodminder_w_57_41_5e_temperature') | float(0) %}
-            {{ 'Winter mode active: Scoring adjusted for cluster temperatures (50-70°F optimal), low activity (10-30% good), stable weight, and dry climate (20-35% humidity optimal).' if external_temp <= 50 else 'Summer mode active: Scoring for brood-rearing temps (93-95°F optimal), high activity (60%+ excellent), nectar flow weight gain, and Colorado dry climate (30-40% humidity optimal).' }}
+            {% set month = now().month %}
+            {% set is_winter = month in [11, 12, 1, 2, 3] %}
+            {{ 'Winter mode active (Nov-Mar): Scoring adjusted for cluster temperatures (50-70°F optimal), low activity (10-30% good), stable weight, and dry climate (20-35% humidity optimal).' if is_winter else 'Summer mode active (Apr-Oct): Scoring for brood-rearing temps (93-95°F optimal), high activity (60%+ excellent), nectar flow weight gain, and Colorado dry climate (30-40% humidity optimal).' }}
 
       # =====================================================================
       # NECTAR FLOW STATUS
@@ -274,11 +279,13 @@ template:
           {% set activity = states('sensor.bee_hive_monitor_activity_score') | float(0) %}
           {% set weight_change = states('sensor.bee_hive_daily_weight_change') | float(0) %}
           {% set external_temp = states('sensor.broodminder_w_57_41_5e_temperature') | float(0) %}
+          {% set month = now().month %}
+          {% set is_winter = month in [11, 12, 1, 2, 3] %}
           {% if temp >= 85 and temp <= 95 and activity < 20 and weight_change < 0.1 and external_temp > 60 %}
             Possible Queen Issue - Low activity with good conditions
           {% elif temp >= 90 and activity > 40 and weight_change > 0 %}
             Healthy - Good brood temp, activity, and foraging
-          {% elif temp < 85 and external_temp < 50 %}
+          {% elif temp < 85 and is_winter %}
             Winter Mode - Normal low activity
           {% elif activity > 30 %}
             Normal - Active foraging
@@ -300,20 +307,52 @@ template:
         device_class: problem
         state: >
           {% set temp = states('sensor.broodminder_t_47_50_96_temperature') | float(0) %}
-          {% set high = states('input_number.bee_hive_temp_high_threshold') | float(100) %}
-          {% set low = states('input_number.bee_hive_temp_low_threshold') | float(85) %}
-          {{ temp > high or (temp < low and temp > 0) }}
+          {% set month = now().month %}
+          {% set is_winter = month in [11, 12, 1, 2, 3] %}
+          
+          {# Seasonal thresholds - calendar-based like health scoring #}
+          {% if is_winter %}
+            {# Winter: Alert if below 40°F (too cold for cluster) or above 80°F (unusual) #}
+            {% set too_cold = temp < 40 and temp > 0 %}
+            {% set too_hot = temp > 80 %}
+          {% else %}
+            {# Summer: Alert if below 85°F (brood at risk) or above 100°F (overheating) #}
+            {% set too_cold = temp < 85 and temp > 0 %}
+            {% set too_hot = temp > 100 %}
+          {% endif %}
+          
+          {{ too_cold or too_hot }}
         attributes:
           reason: >
             {% set temp = states('sensor.broodminder_t_47_50_96_temperature') | float(0) %}
-            {% if temp > 100 %}
-              Hive too hot ({{ temp | round(1) }}°F) - Check ventilation!
-            {% elif temp < 85 and temp > 0 %}
-              Hive too cold ({{ temp | round(1) }}°F) - Low brood activity
+            {% set month = now().month %}
+            {% set is_winter = month in [11, 12, 1, 2, 3] %}
+            
+            {% if is_winter %}
+              {% if temp > 80 %}
+                Winter - Hive too warm ({{ temp | round(1) }}°F) - Unusual for winter
+              {% elif temp < 40 and temp > 0 %}
+                Winter - Hive very cold ({{ temp | round(1) }}°F) - Check cluster
+              {% else %}
+                Normal winter temperature ({{ temp | round(1) }}°F)
+              {% endif %}
             {% else %}
-              Normal
+              {% if temp > 100 %}
+                Summer - Hive too hot ({{ temp | round(1) }}°F) - Check ventilation!
+              {% elif temp < 85 and temp > 0 %}
+                Summer - Hive too cold ({{ temp | round(1) }}°F) - Low brood activity
+              {% else %}
+                Normal summer temperature ({{ temp | round(1) }}°F)
+              {% endif %}
             {% endif %}
           current_temp: "{{ states('sensor.broodminder_t_47_50_96_temperature') | float(0) | round(1) }}°F"
+          season_mode: >
+            {% set month = now().month %}
+            {{ 'Winter' if month in [11, 12, 1, 2, 3] else 'Summer' }}
+          winter_low_threshold: "40°F"
+          winter_high_threshold: "80°F"
+          summer_low_threshold: "85°F"
+          summer_high_threshold: "100°F"
 
       - name: "Bee Hive Nectar Flow Active"
         unique_id: bee_hive_nectar_flow_active
