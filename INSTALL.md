@@ -352,8 +352,8 @@ from typing import Optional, Tuple
 # ============================================================================
 # CONFIGURATION - UPDATE THESE VALUES
 # ============================================================================
-ESP32_IP = "192.168.1.100"  # Your ESP32 static IP
-HA_URL = "http://192.168.1.50:8123"  # Your Home Assistant URL
+ESP32_IP = "192.168.1.XXX"  # Your ESP32 static IP
+HA_URL = "http://192.168.1.XXX:8123"  # Your Home Assistant URL
 HA_TOKEN = "YOUR_LONG_LIVED_ACCESS_TOKEN"  # Create in HA → Profile
 
 # Motion detection settings
