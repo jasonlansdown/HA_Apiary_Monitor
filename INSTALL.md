@@ -28,7 +28,6 @@ This guide will walk you through setting up your bee hive monitoring system from
 ### **Optional** 📦
 - [ ] GreenAPI account (WhatsApp notifications)
 - [ ] iPhone with Home Assistant app
-- [ ] Solar panel + battery for remote deployment
 
 ---
 
