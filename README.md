@@ -28,7 +28,7 @@ A comprehensive, self-hosted bee hive monitoring system using computer vision, e
 ### **Seasonal Intelligence**
 - **Winter Mode** (≤50°F): Optimized for cluster temps (50-70°F), low activity normal
 - **Summer Mode** (>50°F): Optimized for brood rearing (93-95°F), high foraging expected
-- **Colorado Climate Adjusted**: Humidity ranges calibrated for dry climate (20-40% optimal)
+- **Dry Climate Adjusted**: Humidity ranges calibrated for dry climate (20-40% optimal) - very easy to adjust for your climate
 
 ### **Real-Time Monitoring**
 - Live camera feed with 5-second motion detection updates
@@ -61,7 +61,6 @@ A comprehensive, self-hosted bee hive monitoring system using computer vision, e
 
 ### **Optional**
 - iPhone + WhatsApp (via GreenAPI)
-- Solar panel + battery for remote deployment
 
 📋 **[Complete Hardware Shopping List →](HARDWARE.md)**
 
@@ -181,7 +180,7 @@ bee-brothel/
 
 ## 🌍 Climate Customization
 
-**Designed for Colorado but easily adaptable:**
+**Designed for Dry Climates but easily adaptable:**
 
 Humidity ranges in [`config/home-assistant/configuration.yaml`](config/home-assistant/configuration.yaml):
 
